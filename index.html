@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -31,7 +32,9 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
 
   <script type="text/babel" data-type="module">
@@ -163,27 +166,43 @@ SAFETY:
 Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
     }
 
+    // ── AI Chat Engine (Pollinations gen.pollinations.ai) ──
     async function chatWithAI(messages, systemPrompt) {
       try {
-        const res = await fetch("https://text.pollinations.ai/openai", {
+        // Primary: gen.pollinations.ai OpenAI-compatible endpoint (correct 2026 endpoint)
+        const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "openai",
             messages: [{ role: "system", content: systemPrompt }, ...messages],
-            temperature: 0.75,
+            temperature: 0.78,
           }),
         });
-        const raw = await res.text();
-        try {
-          const data = JSON.parse(raw);
-          if (data.choices?.[0]?.message?.content) return data.choices[0].message.content;
-        } catch(e) {}
-        if (raw && raw.length > 10 && !raw.startsWith("{") && !raw.startsWith("<")) return raw;
-        return "I hear you. Tell me more about what you're feeling right now — I'm here.";
+        if (res.ok) {
+          const raw = await res.text();
+          try {
+            const data = JSON.parse(raw);
+            if (data.choices?.[0]?.message?.content) return data.choices[0].message.content;
+          } catch(e) {}
+          // Some responses come as plain text
+          if (raw && raw.length > 15 && !raw.includes('"error"')) return raw;
+        }
+
+        // Fallback: simple GET text endpoint
+        const lastMsg = messages[messages.length - 1]?.content || "hello";
+        const sysShort = "You are MindPulse, a warm caring mental wellness companion. Validate feelings, use CBT techniques naturally, keep responses to 2-3 paragraphs.";
+        const prompt = encodeURIComponent(sysShort + "\n\nUser: " + lastMsg + "\n\nRespond warmly:");
+        const fallback = await fetch(`https://gen.pollinations.ai/text/${prompt}?model=openai`);
+        if (fallback.ok) {
+          const fbText = await fallback.text();
+          if (fbText && fbText.length > 15) return fbText;
+        }
+
+        return "I hear you, and what you're feeling is valid. I'm here — tell me more about what's going on.";
       } catch(e) {
         console.error("Chat error:", e);
-        return "I'm here with you. Could you try sharing that thought again? I want to make sure I hear you.";
+        return "I'm here with you. Something interrupted our connection, but I haven't gone anywhere. Try sharing that again?";
       }
     }
 
@@ -318,26 +337,51 @@ Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
         const updated = [...chatMessages, userMsg];
         setChatMessages(updated); setInputText(""); setIsTyping(true);
         const reply = await chatWithAI(updated.slice(-20), buildSystemPrompt(user));
+        // Simulate word-by-word streaming for a living feel
+        const words = reply.split(" ");
+        let displayed = "";
+        for (let i = 0; i < words.length; i++) {
+          displayed += (i === 0 ? "" : " ") + words[i];
+          setChatMessages([...updated, { role: "assistant", content: displayed }]);
+          await new Promise(r => setTimeout(r, 28 + Math.random() * 22));
+        }
         const withReply = [...updated, { role: "assistant", content: reply }];
         setChatMessages(withReply); setIsTyping(false);
         await store.set(CHAT_KEY, withReply.slice(-50));
       };
 
+      // Generate warm first message based on user profile
+      const getWelcomeMessage = () => {
+        const name = user?.name || "friend";
+        const z = user?.zodiac;
+        const pain = user?.painPoints;
+        if (pain) return `Hey ${name}. I'm really glad you're here. I know you mentioned you've been dealing with some things, and I want you to know — this is your space. There's no pressure, no judgment. Whatever you want to talk about, whenever you're ready.`;
+        if (z) return `Hey ${name}. Welcome to your space. I'm here whenever you need me — to talk, to listen, or just to sit with you in the quiet. What's on your mind today?`;
+        return `Hey ${name}. I'm glad you're here. This is your safe space — no judgment, no pressure. Just you, and someone who's here to listen. What's on your heart?`;
+      };
+
       useEffect(() => { if (screen === "chat") chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages, isTyping, screen]);
 
-      const renderChat = () => <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: "70vh" }}>
+      const renderChat = () => {
+        const showWelcome = chatMessages.length === 0;
+        return <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: "70vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}><button onClick={() => setScreen("home")} style={{ background: "none", border: "none", color: fgMuted, fontSize: 14, cursor: "pointer" }}>← Back</button><span style={{ fontSize: 13, color: fgMuted }}>MindPulse 🌿</span></div>
         <div style={{ flex: 1, overflowY: "auto", marginBottom: 12 }}>
-          {chatMessages.length === 0 && <div style={{ textAlign: "center", paddingTop: 40 }}><div style={{ fontSize: 40, marginBottom: 12 }}>🌿</div><p style={{ color: fgMuted, fontSize: 14, lineHeight: 1.6 }}>This is your safe space, {user?.name}.<br/>Say whatever's on your mind.</p></div>}
+          {showWelcome && <div style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
+              <div style={{ maxWidth: "82%", padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: cardBg, color: fg, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{getWelcomeMessage()}</div>
+            </div>
+          </div>}
           {chatMessages.map((m, i) => (<div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 10 }}><div style={{ maxWidth: "82%", padding: "12px 16px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? "#0D5C63" : cardBg, color: m.role === "user" ? "#fff" : fg, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{m.content}</div></div>))}
-          {isTyping && <div style={{ display: "flex", marginBottom: 10 }}><div style={{ padding: "12px 20px", borderRadius: "18px 18px 18px 4px", background: cardBg, color: fgMuted, fontSize: 14 }}><span style={{ animation: "pulse 1.5s infinite" }}>thinking...</span></div></div>}
+          {isTyping && chatMessages[chatMessages.length-1]?.role !== "assistant" && <div style={{ display: "flex", marginBottom: 10 }}><div style={{ padding: "12px 20px", borderRadius: "18px 18px 18px 4px", background: cardBg, color: fgMuted, fontSize: 14 }}><span style={{ animation: "pulse 1.5s infinite" }}>✦ reflecting...</span></div></div>}
           <div ref={chatEndRef} />
         </div>
-        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 0, paddingBottom: 4 }}>
+        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 0, paddingBottom: 4, background: "inherit" }}>
           <input value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }} placeholder="Share what's on your mind..." autoComplete="off" enterKeyHint="send" style={{ flex: 1, padding: 14, borderRadius: 20, border: dark ? "1px solid rgba(255,255,255,0.15)" : "1px solid #ddd", background: inputBg, fontSize: 16, color: fg, WebkitAppearance: "none" }} />
           <button onClick={sendChatMessage} disabled={isTyping} style={{ padding: "14px 18px", borderRadius: 20, border: "none", background: isTyping ? "#666" : "#0D5C63", color: "#fff", fontSize: 16, cursor: isTyping ? "default" : "pointer", flexShrink: 0 }}>↑</button>
         </div>
       </div>;
+      };
 
       // ── Journal ──
       const JournalScreen = () => {
@@ -390,5 +434,6 @@ Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
 
     ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(MindPulse));
   </script>
+
 </body>
 </html>
