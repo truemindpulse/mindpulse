@@ -166,44 +166,472 @@ SAFETY:
 Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
     }
 
-    // ── AI Chat Engine (Pollinations gen.pollinations.ai) ──
-    async function chatWithAI(messages, systemPrompt) {
-      try {
-        // Primary: gen.pollinations.ai OpenAI-compatible endpoint (correct 2026 endpoint)
-        const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "openai",
-            messages: [{ role: "system", content: systemPrompt }, ...messages],
-            temperature: 0.78,
-          }),
-        });
-        if (res.ok) {
-          const raw = await res.text();
-          try {
-            const data = JSON.parse(raw);
-            if (data.choices?.[0]?.message?.content) return data.choices[0].message.content;
-          } catch(e) {}
-          // Some responses come as plain text
-          if (raw && raw.length > 15 && !raw.includes('"error"')) return raw;
-        }
 
-        // Fallback: simple GET text endpoint
-        const lastMsg = messages[messages.length - 1]?.content || "hello";
-        const sysShort = "You are MindPulse, a warm caring mental wellness companion. Validate feelings, use CBT techniques naturally, keep responses to 2-3 paragraphs.";
-        const prompt = encodeURIComponent(sysShort + "\n\nUser: " + lastMsg + "\n\nRespond warmly:");
-        const fallback = await fetch(`https://gen.pollinations.ai/text/${prompt}?model=openai`);
-        if (fallback.ok) {
-          const fbText = await fallback.text();
-          if (fbText && fbText.length > 15) return fbText;
-        }
+    // ═══════════════════════════════════════════════
+    // THERAPEUTIC BRAIN v2 — 200+ Clinically-Informed Responses
+    // 11 emotional categories, 5 depth layers, crisis detection
+    // Architecture: Listen → Validate → Explore → Guide → Tools
+    // ═══════════════════════════════════════════════
 
-        return "I hear you, and what you're feeling is valid. I'm here — tell me more about what's going on.";
-      } catch(e) {
-        console.error("Chat error:", e);
-        return "I'm here with you. Something interrupted our connection, but I haven't gone anywhere. Try sharing that again?";
+    const R = {
+      divorce: {
+        listen: [
+          "Divorce is one of the most painful transitions anyone can go through, {name}. You're not just losing a relationship — you're losing a version of the future you planned. What part feels hardest right now?",
+          "I hear you. Divorce can make you question everything — who you are, what went wrong, what comes next. Those feelings are completely normal. Tell me what's weighing on you most today.",
+          "Going through a divorce while managing custody is incredibly heavy. You're being asked to hold yourself together while your world is being restructured. What does a typical day look like right now?",
+          "The end of a marriage doesn't erase the love that was there. It's okay to grieve what you had while knowing that the change was necessary. Which feeling is stronger — relief or loss?",
+          "Co-parenting with someone who hurt you takes a strength most people will never understand, {name}. You're doing it for your kids. How are they handling things?",
+          "Structured visitation can feel dehumanizing when you're used to seeing your kids every day. That ache when they leave — it never fully goes away. But it does become something you learn to carry. How are you managing those transitions?",
+        ],
+        validate: [
+          "What you're feeling isn't weakness — it's the appropriate response to an enormous life change. Divorce disrupts everything: your identity, routines, your sense of safety. That inner chaos makes total sense.",
+          "You don't have to be okay yet, {name}. Society tells us to 'move on' quickly, but grief from divorce can take years. The fact that you're here talking about it means you're processing — and that's exactly right.",
+          "Feeling angry at your ex doesn't make you a bad person. Feeling sad about the marriage ending doesn't mean you made the wrong choice. You can hold both truths at the same time.",
+          "The loneliness after divorce hits differently at night, doesn't it? An empty bed, an empty house, the silence where noise used to be. That emptiness is real and it deserves to be acknowledged.",
+        ],
+        explore: [
+          "When you imagine your life a year from now, what do you see? Not what you fear — what do you hope for?",
+          "Sometimes in divorce we lose track of who we are outside of being someone's partner. What's something that was yours before the relationship — a passion, a dream — that you'd like to reconnect with?",
+          "How are you taking care of yourself? And I mean really taking care — not just surviving. When was the last time you did something just for you?",
+          "Let's talk about boundaries. Are there areas where your ex is still taking up emotional space they shouldn't be? What would it look like to reclaim that space?",
+          "What's the hardest part of co-parenting right now? The logistics, the emotions, or seeing your kids caught in the middle?",
+        ],
+        guide: [
+          "One thing that helps during divorce is creating small anchors — tiny rituals that are yours alone. A morning coffee in silence. A walk at sunset. A playlist that makes you feel strong. What could your anchor be?",
+          "Before reacting to a text from your ex, pause and ask three things: Is this urgent? Is it about the kids? Does it require my emotional energy? If the answer to all three isn't yes, you can respond later or not at all.",
+          "When the grief hits in waves, try this: put your hand on your chest and say quietly, 'This is a moment of suffering. Suffering is part of life. May I be kind to myself right now.' Self-compassion practice reduces emotional reactivity — it's backed by research.",
+          "For custody transitions, create a 're-entry ritual' for when your kids come back. Something predictable — their favorite snack, 10 minutes of play, a specific greeting. Predictability is healing for kids and for you.",
+          "Start a 'new chapter' journal. Not about the divorce — about what comes next. Who are you becoming? What do you want? Writing your future is powerful when your past just fell apart.",
+        ],
+      },
+
+      grief: {
+        listen: [
+          "I'm so sorry, {name}. Grief doesn't have a timeline, and anyone who tells you it does hasn't experienced real loss. Tell me about who or what you've lost.",
+          "Grief can feel like you're underwater — the world keeps moving but you can't quite reach the surface. How long have you been carrying this?",
+          "Loss changes the shape of your life permanently. You don't get over it — you grow around it. What are you grieving right now?",
+          "Sometimes grief hits at the strangest moments — a song, a smell, an ordinary Tuesday. When does it catch you off guard most?",
+          "The hardest part of grief is often the silence after. When everyone else moves on but you're still standing at the edge of it. Is that where you are?",
+          "Are you grieving a person, a relationship, a version of yourself, or all of the above? Sometimes grief is layered and we don't realize we're mourning multiple things at once.",
+        ],
+        validate: [
+          "There is no right way to grieve, {name}. Crying is valid. Numbness is valid. Anger is valid. Laughing at a memory — that's valid too. Whatever you're feeling, you're doing grief correctly.",
+          "People might say 'they're in a better place' or 'be strong.' Those words can feel hollow when your world has been shattered. You don't have to be strong right now. You just have to be honest.",
+          "Grief is the price of love. The depth of your pain reflects the depth of your connection. That's not a burden — it's a testament.",
+          "If you're feeling guilty — about things said or unsaid, done or undone — know that guilt is grief's most common companion. It doesn't mean you failed.",
+        ],
+        explore: [
+          "What do you miss most about them? Sometimes putting it into words helps us hold the memory more gently.",
+          "Is there something you wish you could tell them? You can say it here. I'm listening.",
+          "How has this loss changed the way you see the world? Grief often reshapes our values in unexpected ways.",
+          "Are there moments where you feel closer to them? What brings those on?",
+          "Who in your life truly understands this grief? Or are you carrying it mostly alone?",
+        ],
+        guide: [
+          "Write a letter to the person you've lost. You don't have to send it anywhere. Just let the words come. What you say might surprise you.",
+          "Grief often shows up in the body — tight chest, heavy limbs, exhaustion. Scan your body right now. Where are you holding it? Put a warm hand there. Breathe into that spot.",
+          "Create a small ritual to honor them. Light a candle on their birthday. Play their favorite song on the anniversary. Grief needs a container, and rituals give it one.",
+          "When grief feels suffocating, try 5-4-3-2-1 grounding: 5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste. It won't erase the pain but it brings you back to now.",
+          "Consider a 'continuing bonds' practice — keep a photo visible, wear something of theirs, talk to them in your mind. Research shows maintaining connection with the lost person is healthy, not a sign you haven't moved on.",
+        ],
+      },
+
+      anxiety: {
+        listen: [
+          "Anxiety can feel like your brain is running worst-case scenarios on a loop, {name}. What thought keeps circling right now?",
+          "When you say you feel anxious, where do you feel it in your body? Chest? Stomach? Throat? Our bodies often know before our minds do.",
+          "Is this a new feeling, or has anxiety been a companion for a while? Understanding the pattern helps us find the lever to shift it.",
+          "Tell me about the last time you felt genuinely calm. What was different about that moment?",
+          "Anxiety often disguises itself as productivity or preparedness. Are there ways yours shows up that others might not even recognize?",
+          "What's the worst thing anxiety tells you will happen? And what actually happens most of the time?",
+        ],
+        validate: [
+          "Your anxiety isn't a character flaw, {name}. It's your nervous system doing what it was designed to do — detect threats. The alarm system works; it's just miscalibrating what's actually dangerous.",
+          "Panic attacks can feel like dying. You're not dying — but knowing that in the moment doesn't always help. What does help is this: every panic attack has ended. Every single one. This one will too.",
+          "You're not 'too much' for feeling this way. Anxiety is one of the most common human experiences. You're not broken — you're overwhelmed.",
+          "The fact that you're aware of your anxiety means you have insight. That's a strength, even when it doesn't feel like one.",
+        ],
+        explore: [
+          "Rate how likely the feared outcome actually is, 0 to 100. Now — what evidence do you have for that number?",
+          "Sometimes anxiety is about something deeper — fear of rejection, need for control, an old memory that got activated. What might be underneath?",
+          "When anxiety peaks, what do you usually do? And does that help in the long run, or feed the cycle?",
+          "What would you do differently today if anxiety took a day off?",
+          "Is your anxiety about something happening, or about not being able to handle it if it does? That distinction matters.",
+        ],
+        guide: [
+          "Let's try box breathing right now. In for 4. Hold for 4. Out for 4. Hold for 4. Three rounds. This activates your parasympathetic nervous system — it's the physiological off-switch for panic.",
+          "Try 'cognitive defusion': put 'I notice I'm having the thought that...' in front of the anxious thought. 'Something terrible will happen' becomes 'I notice I'm having the thought that something terrible will happen.' Distance changes everything.",
+          "Progressive muscle relaxation: start with your toes — squeeze tight for 5 seconds, release. Move up through your body. When you release each muscle, notice the contrast. Your body can't be tense and relaxed at the same time.",
+          "Create a 'worry window' — 15 minutes a day that's your designated worry time. Outside that window, write worries down and tell yourself: 'I'll worry about this at 6pm.' This retrains your brain to contain anxiety.",
+          "The 3-3-3 rule when anxiety spikes: name 3 things you see, 3 sounds you hear, move 3 body parts. This interrupts the loop by pulling you into your senses.",
+        ],
+      },
+
+      depression: {
+        listen: [
+          "Depression can make everything feel gray — like the color has been drained from life. How long has it been this way, {name}?",
+          "When you say you're depressed, what does that look like day to day? Sleeping too much or too little? Eating differently? Pulling away from people?",
+          "Sometimes depression whispers 'nothing will ever change' or 'what's the point.' Is that voice talking to you right now?",
+          "It took something to come here and talk about this. Depression tells you not to bother. You bothered anyway. That matters.",
+          "Are there moments in the day that feel slightly lighter? Even a flicker?",
+          "How long have you been pushing through this alone? Depression gets heavier the longer we carry it in silence.",
+        ],
+        validate: [
+          "Depression is not laziness, {name}. It's not a choice. It's your brain's chemistry and your life's circumstances colliding in a way that makes everything harder. You're not failing — you're fighting an invisible battle every day.",
+          "If you can't get out of bed, that's okay. If you ate cereal for dinner, that's okay. If you canceled plans because you couldn't face people, that's okay. Survival mode is still survival.",
+          "You don't owe anyone a smile when you're drowning inside. Your feelings are real, valid, and they deserve to be heard — not pushed down.",
+          "Depression lies. It says you're a burden, that nobody would notice if you disappeared, that you've always been this way. Those are symptoms, not truths.",
+        ],
+        explore: [
+          "What's one thing depression is telling you right now that, on your best day, you'd know isn't entirely true?",
+          "When was the last time you felt something positive — even briefly? What triggered it?",
+          "Depression often pulls us away from what gives us energy. What's something you used to enjoy that you've stopped doing?",
+          "If you could wave a magic wand and change one thing about right now, what would it be?",
+          "Who in your life knows how you're really feeling? Not the polished version — the real one.",
+        ],
+        guide: [
+          "Behavioral activation — depression says withdraw, and withdrawal deepens depression. Let's break the cycle with something tiny. Not 'go to the gym.' More like: 'walk to the mailbox.' 'Open the curtains.' What's the smallest possible step today?",
+          "Try '3 good things' tonight: write down 3 things that went okay today. Not great — just okay. 'I drank water.' 'The sun was out.' 'I made it through.' Research shows this rewires your brain's negativity bias over time.",
+          "When depression makes your inner voice cruel, respond the way you'd respond to a friend. Say it out loud: 'You're going through something really hard, and you're doing the best you can.'",
+          "Set a 'bare minimum' for each day — not a goal, a floor. On a bad day: brush teeth, eat one meal, step outside for 60 seconds. That's enough. That's a win.",
+          "Movement helps depression more than most realize. Not exercise — movement. Stretch for 2 minutes. Dance badly to one song. Walk around the block. Dopamine doesn't need a gym membership.",
+        ],
+      },
+
+      loneliness: {
+        listen: [
+          "Loneliness can be one of the most painful feelings, {name}, especially when you're surrounded by people but still feel invisible. When do you feel most alone?",
+          "You reached out right now, and that tells me something important — you're looking for connection. That instinct is healthy. What kind of connection do you miss most?",
+          "There's a difference between being alone and being lonely. Which one is it for you right now?",
+          "Do you feel like people see the real you? Or does it feel like you're performing a version of yourself that keeps people at a distance?",
+          "Loneliness compounds — the more isolated we feel, the harder it is to reach out. How long has this been building?",
+        ],
+        validate: [
+          "Feeling lonely doesn't mean you're unlovable, {name}. It usually means the connections you need aren't matching what you're getting. That's a circumstance, not a verdict on who you are.",
+          "Our brains are wired for connection. Loneliness activates the same pain pathways as physical injury. What you're feeling is physiologically real.",
+          "It's okay to admit you're lonely. Society treats it like a shameful secret, but it's universal. You're not the only one feeling this right now.",
+          "If social media makes it worse — seeing everyone else's highlight reel while you're sitting alone — that's completely normal. You're comparing your behind-the-scenes to everyone else's stage performance.",
+        ],
+        explore: [
+          "What does meaningful connection look like for you? Not just 'having friends' — what kind of interaction actually fills your cup?",
+          "Is there someone you could reach out to right now — even with a simple text? Not to solve the loneliness, but to crack the door open?",
+          "Sometimes loneliness is about the relationship we have with ourselves. How do you feel when you're alone with your own thoughts?",
+          "Have you ever had a time when you felt deeply connected? What was different about that time?",
+        ],
+        guide: [
+          "Tomorrow, make eye contact with someone and say one genuine thing. To a barista, neighbor, coworker. 'I like your jacket.' 'That coffee smells amazing.' Micro-connections add up.",
+          "Try this prompt: 'The kind of friend I wish I had would...' Then ask: 'Am I being that friend to anyone?' Sometimes the path to connection starts with giving what we want to receive.",
+          "Consider one community built around something you care about. Not to 'make friends' — just to be around people who share your wavelength.",
+          "Schedule a weekly 'connection appointment' — a call, a coffee, a walk. Treat it like a medical appointment. Connection isn't accidental — it's something you build intentionally.",
+        ],
+      },
+
+      trauma: {
+        listen: [
+          "Trauma changes how your brain and body respond to the world, {name}. You're not overreacting — you're responding to something that was under-processed. How is it affecting you now?",
+          "You don't have to share details of what happened unless you want to. We can talk about how it's affecting you now without revisiting the event. What feels safest?",
+          "Are you experiencing flashbacks, nightmares, or moments where you feel like you're back there? Those are your brain trying to process what happened.",
+          "Sometimes trauma shows up not as a memory but as a feeling — sudden panic, numbness, rage, or freeze. What does yours look like?",
+          "You survived something that should never have happened. That survival instinct is still running. Let's talk about how it shows up daily.",
+        ],
+        validate: [
+          "What happened to you was not your fault, {name}. Whatever your brain tells you about what you 'should have' done — that's the trauma speaking, not the truth.",
+          "Hypervigilance, emotional numbness, difficulty trusting — these aren't character flaws. They're adaptations your nervous system made to keep you safe. They were necessary then. We can soften them now.",
+          "If you feel like you 'should be over it by now,' please know: trauma doesn't follow a calendar. Your brain processes at its own pace.",
+          "You are not damaged. You are not broken. You are a person who was hurt, and your system is doing what it was designed to do — protect you from being hurt again.",
+        ],
+        explore: [
+          "What does safety feel like for you right now? Is there a place, a person, or a moment where you feel more at ease?",
+          "Are there specific triggers? Sometimes identifying them gives us a small sense of control.",
+          "How has this experience changed how you see yourself? And is that view fair?",
+          "What does your body do when a trigger hits? Understanding your physical response helps us interrupt the cycle.",
+        ],
+        guide: [
+          "When triggered, try the 'container' technique: imagine a strong box or vault. Place the distressing thought inside it. Close the lid. Lock it. You can open it in a safe space later — but right now, it's contained.",
+          "Grounding is essential for trauma. Press your feet into the floor. Feel the chair holding you. Run cold water over your wrists. These sensations tell your nervous system: 'I am here. I am now. I am safe.'",
+          "Trauma healing benefits enormously from professional support — EMDR, somatic experiencing, trauma-focused CBT. I'm always here, but a trained professional can accelerate healing in ways self-help can't. Want me to share options?",
+          "Try bilateral tapping — cross your arms over your chest and alternately tap your shoulders left-right-left-right slowly. This mimics EMDR and can calm your nervous system during a flashback.",
+        ],
+      },
+
+      selfworth: {
+        listen: [
+          "When you look at who you are as a person — not what you do, but who you are — what do you see, {name}?",
+          "The way you talk to yourself sounds really harsh. If someone spoke to your best friend that way, what would you say to them?",
+          "Do you feel like you're enough? Or is there a voice that constantly says you should be more, do more, be better?",
+          "Where do you think this belief came from? Was there someone who made you feel like you weren't good enough?",
+          "Identity can feel unstable after big changes — a breakup, job loss, becoming a parent, losing one. What's shifted for you?",
+        ],
+        validate: [
+          "The voice that says you're not enough? That's not truth — that's conditioning. Someone planted that seed. You don't have to keep watering it.",
+          "You are not your worst moment, {name}. You are not your biggest mistake. You deserve the same compassion you give to others.",
+          "If your worth was determined by productivity, appearance, or others' opinions, it could be taken away. Real worth can't be earned or lost. You have it because you exist.",
+          "It takes courage to question your own self-worth — you're admitting something hurts. That vulnerability is strength, not weakness.",
+        ],
+        explore: [
+          "What would change in your daily life if you genuinely believed you were worthy of love and belonging?",
+          "Name three things you've done this year that you're proud of. They can be tiny — surviving a hard day counts.",
+          "Whose voice do you hear when you criticize yourself? A parent? Teacher? Ex? Sometimes naming the source takes away its power.",
+          "What qualities do the people you admire most have? I'd bet you have more of those than you think.",
+        ],
+        guide: [
+          "Every morning for one week, look in the mirror and say one thing you genuinely appreciate about yourself. It'll feel awkward. Do it anyway. Your brain needs new neural pathways.",
+          "When the inner critic speaks, give it a name — 'There goes The Judge again.' Externalizing creates distance. You are not the voice. You're the one who hears it.",
+          "Start a 'proof of worth' list — not achievements, but moments of character. Times you were kind. Times you chose hard over easy. Times you showed up. Read it when the critic gets loud.",
+          "Ask yourself: 'Would I let someone I love believe this about themselves?' If not, you don't get to believe it about yourself either.",
+        ],
+      },
+
+      addiction: {
+        listen: [
+          "Talking about addiction takes real courage, {name}. No judgment here — only honesty. What's going on for you right now?",
+          "Are you in active use, trying to quit, in recovery, or somewhere in between? No wrong answer — I just want to meet you where you are.",
+          "What does the substance or behavior give you that you can't seem to get any other way? Understanding the function is the first step to replacing it.",
+          "How many times have you tried to stop? Each attempt isn't a failure — it's data about what works and what doesn't.",
+          "When do cravings hit hardest? Time of day, emotional state, situations — patterns tell us a lot.",
+        ],
+        validate: [
+          "Addiction is not a moral failure, {name}. It's a coping mechanism that got out of control. Your brain found something that temporarily relieved pain and latched on. That makes you human, not broken.",
+          "If you've relapsed, that doesn't erase your progress. Recovery isn't a straight line — it's a spiral. Each time you come back, you bring everything you learned.",
+          "The shame around addiction often does more damage than the addiction itself. You deserve support, not punishment. Compassion, not contempt — including from yourself.",
+        ],
+        explore: [
+          "What were you feeling right before the last time you used? That 'before' moment holds the key.",
+          "If the addiction were removed tomorrow, what emotion would you have to face?",
+          "Who supports your recovery? And who, honestly, makes it harder?",
+        ],
+        guide: [
+          "HALT technique: when a craving hits, check if you're Hungry, Angry, Lonely, or Tired. These are the most common triggers. Address the underlying need first.",
+          "Create a 'craving surfboard' — when the urge hits, observe it like a wave. It rises, peaks, and falls. No wave lasts forever. Most cravings pass within 15-20 minutes.",
+          "Have 3 crisis contacts ready — people you can call or text when you're at the edge. Write the list now, so it's there when you need it.",
+          "Recovery meetings — AA, NA, SMART Recovery — aren't for everyone. But they offer something powerful: a room where you don't have to explain yourself. Would you be open to trying one?",
+        ],
+      },
+
+      betrayal: {
+        listen: [
+          "Being betrayed by someone you trusted is one of the deepest wounds, {name}. Tell me what happened — I'm here without judgment.",
+          "Discovering infidelity can feel like the ground opened beneath you. Everything you believed about your relationship got rewritten. How are you processing this?",
+          "Separation after betrayal brings a unique pain — you're grieving the person, the relationship, and the reality you thought was real. Which part hurts most?",
+          "Are you feeling more angry, sad, or numb right now? All of those are valid.",
+          "Do you know the full truth, or are there still pieces you're trying to put together? That uncertainty is its own kind of torture.",
+        ],
+        validate: [
+          "You did nothing to deserve this. Infidelity is a choice the other person made. You can examine the dynamics without taking blame for their betrayal.",
+          "The rage, the obsessive checking, the replaying every moment — these aren't you going crazy. They're your brain trying to reconcile what you believed with what actually happened. That's a normal trauma response.",
+          "Whether you stay or leave — neither makes you weak or stupid. Both paths take enormous courage. Only you can know what's right.",
+          "Trust was broken. Rebuilding — whether with this person or in future relationships — is possible. But it's a process. You don't have to figure it out today.",
+        ],
+        explore: [
+          "What does trust mean to you now? Has your definition changed?",
+          "Are you more afraid of being alone, or of being betrayed again? That answer reveals what's driving your decisions.",
+          "What do you need from the person who hurt you? An apology? Answers? Space?",
+        ],
+        guide: [
+          "When intrusive images hit, picture a volume dial. Mentally turn it down. You can't erase the image, but you can reduce its intensity.",
+          "Set a 'processing boundary' — 30 minutes a day to think about the betrayal, then consciously redirect. Not because it doesn't matter, but because you deserve hours that aren't consumed by it.",
+          "Write an unsent letter. Say everything. Get it all out. Then decide what, if anything, you actually want to communicate.",
+          "The path forward starts with one question: 'What do I need to feel safe?' Not 'What should I do?' Safety first. Decisions second.",
+        ],
+      },
+
+      crisis: {
+        immediate: [
+          "I hear you, {name}, and I need you to know that your life matters. What you're feeling is real and overwhelming — but this feeling is not permanent, even though it feels like it is.\n\n🔴 If you are in immediate danger:\n• 988 Suicide & Crisis Lifeline — call or text 988\n• Crisis Text Line — text HOME to 741741\n• Emergency — 911\n\nI'm right here with you. Are you safe right now?",
+          "Thank you for trusting me with this, {name}. That took enormous courage.\n\n🔴 Please reach out to someone trained for this:\n• 988 Lifeline — call or text 988 (24/7, free, confidential)\n• Crisis Text Line — text HOME to 741741\n\nI care about what happens to you. Are you somewhere safe? Is someone nearby?",
+          "{name}, I'm really glad you told me this. Reaching out when you're in pain is one of the bravest things a person can do.\n\n🔴 Please connect with:\n• 988 Lifeline — call or text 988\n• Crisis Text Line — text HOME to 741741\n• SAMHSA — 1-800-662-4357\n\nI'm here. I'm not judging you. Tell me what's happening right now.",
+        ],
+        followup: [
+          "I'm still here, {name}. You haven't scared me away. Whatever you're feeling, we can sit with it. But please — have you reached out to 988? A trained counselor can offer support that goes beyond what I can provide.",
+          "Your pain is real, and you deserve real help. The 988 Lifeline has people standing by right now whose entire purpose is moments like this. Would you be willing to try?",
+          "I want you to still be here tomorrow, {name}. The darkness has an end — even if you can't see it yet. Please keep talking to me, and consider calling 988. You are worth that call.",
+        ],
+      },
+
+      anger: {
+        listen: [
+          "I can feel the anger coming through, {name}. Anger is a messenger — it shows up when a boundary has been crossed or a need isn't being met. What happened?",
+          "Tell me what's making you angry. Don't filter it. This is your space.",
+          "Are you more angry at someone else, at yourself, or at the situation? Sometimes all three are tangled together.",
+          "When did this anger start? A specific moment, or has it been building?",
+        ],
+        validate: [
+          "Your anger is valid. It gets a bad reputation, but at its core it's passion that something is wrong. The question isn't whether to feel angry — it's what to do with it.",
+          "Being told to 'calm down' when you're angry is incredibly invalidating. I'm not going to say that. I'm going to say: I hear you, and your anger makes sense.",
+          "Anger often sits on top of a deeper emotion — hurt, fear, helplessness. What's underneath yours?",
+        ],
+        explore: [
+          "If your anger could speak directly to the person or situation, what would it say?",
+          "What boundary was crossed? What would it look like to enforce it going forward?",
+          "Is this anger new, or connected to something older? Sometimes current situations activate old wounds.",
+        ],
+        guide: [
+          "The '90-second rule': the chemical process of anger lasts about 90 seconds. Anything beyond that is you re-triggering it with thoughts. Ride out those 90 seconds without acting, and you'll respond instead of react.",
+          "Physical release helps: push against a wall hard for 30 seconds. Tear paper. Sprint. Your body needs to discharge the energy.",
+          "Write an anger letter — uncensored, raw. Sleep on it. Tomorrow, read it fresh. Some will still be true. Some won't. The important thing: you got it out.",
+        ],
+      },
+
+      stress: {
+        listen: [
+          "It sounds like you're carrying a lot, {name}. When everything feels urgent, it's impossible to think clearly. What's the heaviest thing on your plate?",
+          "Stress makes everything feel equally urgent. But not everything is. What actually needs attention today — and what can wait?",
+          "Is it something specific, or a general overwhelm where you can't pinpoint the source?",
+          "How is stress showing up in your body? Jaw clenched? Shoulders tight? Stomach churning?",
+        ],
+        validate: [
+          "Being stressed doesn't mean you're not coping, {name}. It means you're human and the demands are real.",
+          "You're not 'bad at handling stress.' You're handling a lot of stress. Big difference.",
+          "Modern life was not designed for human nervous systems. You're running ancient biology on a modern operating system. Of course you're overwhelmed.",
+        ],
+        explore: [
+          "What would you take off your plate if you could? No guilt, no consequences.",
+          "Are you adding to your own stress? People-pleasing, perfectionism, saying yes when you mean no?",
+          "What usually helps you decompress that you haven't done recently?",
+        ],
+        guide: [
+          "Energy audit: list everything demanding your time. Mark each as 'energizes,' 'drains,' or 'neutral.' The drains are where we build boundaries.",
+          "2-minute rule: if it takes less than 2 minutes, do it now. If more, schedule it. Clears the mental clutter.",
+          "Before bed, 'brain dump' everything onto paper. Not organized, not pretty. Just out of your head. Your brain needs to know the thoughts are 'saved' so it can stop looping.",
+          "Set a 'hard stop' for your day — a time after which you don't solve problems. Your nervous system needs an off switch.",
+        ],
+      },
+
+      general: {
+        listen: [
+          "I'm here, {name}. Whatever you're feeling right now is valid. No filter needed — just say what's real.",
+          "Thank you for reaching out. Sometimes the hardest part is just starting. What's on your mind?",
+          "I'm listening. No judgment, no advice unless you want it. Just space for honesty.",
+          "Hey {name}. Some days are heavier than others. What's today feeling like?",
+          "You don't have to have it figured out. Just start with whatever feels most true right now.",
+        ],
+        validate: [
+          "What you're feeling makes complete sense given what you're going through. You don't need to justify it — including to yourself.",
+          "You're not overreacting. You're reacting. There's a difference.",
+          "The fact that you're sitting with these feelings instead of burying them shows real strength.",
+          "I hear you, and I believe you. Your experience matters.",
+        ],
+        explore: [
+          "If your best friend was telling you this exact thing, what would you say to them?",
+          "What would it look like to give yourself permission to not be okay for a while?",
+          "Is there a part of this you feel like you have some control over, even a little?",
+          "What does your gut tell you that your brain keeps trying to override?",
+        ],
+        guide: [
+          "Before bed tonight, write the thought bothering you most. Then write what a compassionate mentor would say back. Read it tomorrow.",
+          "Name your emotion precisely. Not 'bad' — 'disappointed,' 'overwhelmed,' 'unappreciated.' The more specific, the more manageable.",
+          "Close your eyes. Three slow breaths. Each exhale, let your shoulders drop. Open your eyes. That tiny pause tells your nervous system: 'We're okay right now.'",
+          "You don't have to solve everything today. You just have to get through today. Tomorrow you'll have one more day of evidence that you can.",
+        ],
+      },
+
+      tools: {
+        cbt: [
+          "Let's examine that thought, {name}. You said: '{thought}'. If we put it on trial — what's the evidence for it? What's the evidence against?",
+          "I notice all-or-nothing thinking: 'always,' 'never,' 'everyone.' What's the 'sometimes' version?",
+          "Powerful question: 'Will this matter in five years?' Not five minutes — five years. Sometimes perspective is the best medicine.",
+          "Your inner critic is loud right now. Let me translate: you said '{thought}' — a compassionate friend would say: 'You're being too hard on yourself.'",
+          "Two columns: 'Evidence this belief is true' and 'Evidence it's not true.' Often the second column is longer than expected.",
+        ],
+        dbt: [
+          "When emotions are at a 9 or 10, logic doesn't work. We need to calm the nervous system first. Try TIPP: Temperature (cold water on face), Intense exercise (30 seconds), Paced breathing, Progressive relaxation.",
+          "Opposite action: when you feel like isolating, reach out to one person. When you feel like yelling, speak quietly. Acting opposite to the urge weakens the emotion's grip.",
+          "Rate your distress 0-10. Now ask: is this a 10 because the situation is, or because the emotional response is? Often the situation is a 5 but the amplification makes it feel unsurvivable.",
+          "Emotions are weather. They pass through. You are the sky — vast enough to hold any storm. This feeling is real, but it is not permanent.",
+        ],
+        grounding: [
+          "Ground with me, {name}. 5 things you see. 4 you touch. 3 you hear. 2 you smell. 1 you taste. Take your time.",
+          "Press your feet into the ground. Feel your weight in the chair. You are here. You are present. You are safe.",
+          "Hold something cold — ice, a cold can. Focus entirely on the sensation. This interrupts the spiral and brings you back to your body.",
+          "Square breathing: in for 4, hold for 4, out for 4, hold for 4. Four rounds. Same technique Navy SEALs use under extreme stress.",
+        ],
+        reflection: [
+          "You've shared a lot today, {name}. What stands out most from our conversation?",
+          "If you could tell your past self one thing based on what you know now, what would it be?",
+          "What's one small commitment you'd make to yourself before we talk again?",
+          "You showed up today. You chose to face something difficult. That's not nothing — that's everything.",
+          "Scale of 1-10, how do you feel now versus when we started? Any shift is progress.",
+        ],
+        affirmation: [
+          "I see you, {name}. Not the mask. Not the performance. The real you — hurting but still showing up. That person deserves kindness.",
+          "You are not defined by what happened to you. You're defined by how you choose to carry it forward.",
+          "Recovery isn't about becoming a different person. It's about becoming more of who you already are underneath the pain.",
+          "You've survived every bad day so far. That's a 100% success rate.",
+          "Progress doesn't always look like progress. Sometimes it looks like getting out of bed. Sometimes it looks like this — having the courage to talk about what hurts.",
+        ],
       }
+    };
+
+    // ── Emotion & Crisis Detection ──
+    function detectEmotion(text) {
+      const lower = text.toLowerCase();
+      if (/\b(kill myself|suicide|suicidal|end it all|end my life|don'?t want to (live|be here|exist)|want to die|better off dead|no reason to live|can'?t go on|self.?harm|hurt myself|overdose)\b/i.test(lower)) return "crisis";
+      const patterns = {
+        divorce: /\b(divorce|custody|co.?parent|visitation|ex.?(wife|husband|spouse)|family court|child support|alimony|split up)\b/,
+        betrayal: /\b(cheat|cheated|cheating|affair|infidelity|unfaithful|betrayed|betrayal|other (wo)?man|broke my trust)\b/,
+        grief: /\b(grief|griev|loss|lost (my|a|someone)|died|death|passed away|miss them|mourning|funeral|terminal)\b/,
+        trauma: /\b(trauma|ptsd|flashback|nightmare|assault|abuse|abused|molest|rape|violence|domestic|trigger)\b/,
+        anxiety: /\b(anxi|worried|panic|nervous|scared|fear|overwhelm|racing|can'?t breathe|dread|restless|on edge|spiraling)\b/,
+        depression: /\b(depress|hopeless|empty|numb|worthless|pointless|can'?t get out of bed|no motivation|no energy|dark place|nothing matters|what'?s the point|giving up)\b/,
+        loneliness: /\b(lonely|alone|isolat|no one|nobody|abandon|disconnected|invisible|left out|no friends|no one cares)\b/,
+        selfworth: /\b(not good enough|hate myself|ugly|stupid|failure|loser|useless|don'?t deserve|imposter|fraud|not enough|insecure|self.?esteem)\b/,
+        addiction: /\b(addict|alcohol|drinking|drunk|drug|pills|substance|rehab|relapse|sober|clean|withdraw|craving|gambling)\b/,
+        anger: /\b(angry|mad|furious|pissed|frustrated|rage|resentment|hate|annoyed|irritat|bitter|snapped)\b/,
+        stress: /\b(stress|burned?.out|exhausted|can'?t cope|drowning|pressure|overload|too much)\b/,
+        sadness: /\b(sad|down|crying|unhappy|low|blue|heavy|hurting|pain|miserable)\b/,
+      };
+      for (const [emotion, regex] of Object.entries(patterns)) if (regex.test(lower)) return emotion;
+      return "general";
+    }
+
+    function getTherapeuticResponse(text, userName, msgCount) {
+      const emotion = detectEmotion(text);
+      const name = userName || "friend";
+      if (emotion === "crisis") {
+        const pool = msgCount > 1 ? R.crisis.followup : R.crisis.immediate;
+        return pool[Math.floor(Math.random() * pool.length)].replace(/{name}/g, name);
+      }
+      // Map sadness to depression pool since they overlap
+      const emotionKey = emotion === "sadness" ? "depression" : emotion;
+      const category = R[emotionKey] || R.general;
+      // Depth layers based on conversation length
+      let layer;
+      if (msgCount <= 1) layer = "listen";
+      else if (msgCount <= 3) layer = "validate";
+      else if (msgCount <= 6) layer = "explore";
+      else if (msgCount <= 10) layer = "guide";
+      else {
+        const toolPools = [R.tools.cbt, R.tools.dbt, R.tools.grounding, R.tools.reflection, R.tools.affirmation];
+        const pool = toolPools[Math.floor(Math.random() * toolPools.length)];
+        return pool[Math.floor(Math.random() * pool.length)].replace(/{name}/g, name).replace(/{thought}/g, text.substring(0, 80));
+      }
+      let pool = category[layer] || category.listen;
+      let resp = pool[Math.floor(Math.random() * pool.length)];
+      return resp.replace(/{name}/g, name).replace(/{thought}/g, text.substring(0, 80)).replace(/{emotion}/g, emotion);
+    }
+
+    // ── AI Engine — Triple fallback: Anthropic → Pollinations → Built-in Brain ──
+    async function chatWithAI(messages, systemPrompt, userName) {
+      const userMsgCount = messages.filter(m => m.role === "user").length;
+      const lastMsg = messages[messages.length - 1]?.content || "";
+      // 1. Anthropic (works inside Claude artifacts)
+      try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: systemPrompt, messages: messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })) }),
+        });
+        if (res.ok) { const data = await res.json(); const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("\n"); if (text?.length > 20) return text; }
+      } catch(e) { console.log("Anthropic unavailable"); }
+      // 2. Pollinations (works from deployed browsers)
+      try {
+        const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "openai", messages: [{ role: "system", content: systemPrompt }, ...messages], temperature: 0.78 }),
+        });
+        if (res.ok) { const raw = await res.text(); try { const d = JSON.parse(raw); if (d.choices?.[0]?.message?.content) return d.choices[0].message.content; } catch(e) {} if (raw?.length > 20 && !raw.includes('"error"')) return raw; }
+      } catch(e) { console.log("Pollinations unavailable"); }
+      // 3. Built-in brain (ALWAYS works)
+      return getTherapeuticResponse(lastMsg, userName, userMsgCount);
     }
 
     function getTimeGradient() {
@@ -336,14 +764,14 @@ Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
         const userMsg = { role: "user", content: inputText.trim() };
         const updated = [...chatMessages, userMsg];
         setChatMessages(updated); setInputText(""); setIsTyping(true);
-        const reply = await chatWithAI(updated.slice(-20), buildSystemPrompt(user));
-        // Simulate word-by-word streaming for a living feel
+        const reply = await chatWithAI(updated.slice(-20), buildSystemPrompt(user), user?.name);
+        // Word-by-word streaming for a living feel
         const words = reply.split(" ");
         let displayed = "";
         for (let i = 0; i < words.length; i++) {
           displayed += (i === 0 ? "" : " ") + words[i];
           setChatMessages([...updated, { role: "assistant", content: displayed }]);
-          await new Promise(r => setTimeout(r, 28 + Math.random() * 22));
+          await new Promise(r => setTimeout(r, 25 + Math.random() * 25));
         }
         const withReply = [...updated, { role: "assistant", content: reply }];
         setChatMessages(withReply); setIsTyping(false);
