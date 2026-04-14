@@ -4,8 +4,8 @@
   "description": "Free AI-powered mental wellness companion. Heal yourself. Heal the world.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4f1de",
-  "theme_color": "#0D5C63",
+  "background_color": "#0A0A0F",
+  "theme_color": "#0A0A0F",
   "orientation": "portrait",
   "icons": [
     {
