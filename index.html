@@ -109,23 +109,77 @@
         try {
           const ctx = new (window.AudioContext || window.webkitAudioContext)();
           ctxRef.current = ctx; activeRef.current = true;
-          const master = ctx.createGain(); master.gain.value = 0.08; master.connect(ctx.destination);
-          [174, 196, 220, 261.6, 293.7].forEach((f, i) => {
-            const osc = ctx.createOscillator(); osc.type = "sine"; osc.frequency.value = f;
+          const master = ctx.createGain(); master.gain.value = 0.12; master.connect(ctx.destination);
+
+          // Reverb via feedback delay
+          const delay1 = ctx.createDelay(1); delay1.delayTime.value = 0.37;
+          const delay2 = ctx.createDelay(1); delay2.delayTime.value = 0.53;
+          const fb1 = ctx.createGain(); fb1.gain.value = 0.3;
+          const fb2 = ctx.createGain(); fb2.gain.value = 0.25;
+          const wet = ctx.createGain(); wet.gain.value = 0.35;
+          delay1.connect(fb1); fb1.connect(delay2); delay2.connect(fb2); fb2.connect(delay1);
+          delay1.connect(wet); delay2.connect(wet); wet.connect(master);
+          const dryWet = ctx.createGain(); dryWet.gain.value = 0.7; dryWet.connect(master);
+
+          // Filtered noise — gentle rain/wind texture
+          const noiseLen = ctx.sampleRate * 4;
+          const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+          const noiseData = noiseBuf.getChannelData(0);
+          for (let i = 0; i < noiseLen; i++) noiseData[i] = (Math.random() * 2 - 1) * 0.5;
+          const noise = ctx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = true;
+          const noiseFilt = ctx.createBiquadFilter(); noiseFilt.type = "lowpass"; noiseFilt.frequency.value = 400; noiseFilt.Q.value = 0.7;
+          const noiseGain = ctx.createGain(); noiseGain.gain.value = 0.04;
+          const noiseLfo = ctx.createOscillator(); noiseLfo.type = "sine"; noiseLfo.frequency.value = 0.05;
+          const noiseLfoG = ctx.createGain(); noiseLfoG.gain.value = 150;
+          noiseLfo.connect(noiseLfoG); noiseLfoG.connect(noiseFilt.frequency);
+          noise.connect(noiseFilt); noiseFilt.connect(noiseGain); noiseGain.connect(dryWet); noiseGain.connect(delay1);
+          noise.start(); noiseLfo.start();
+
+          // Harmonic pads — warm detuned pairs
+          const padNotes = [
+            { f: 130.81, d: 2 },   // C3
+            { f: 164.81, d: -3 },  // E3 detuned
+            { f: 196.00, d: 1 },   // G3
+            { f: 261.63, d: -2 },  // C4 detuned
+            { f: 329.63, d: 3 },   // E4
+          ];
+          padNotes.forEach((note, i) => {
+            // Main oscillator
+            const osc = ctx.createOscillator(); osc.type = "sine"; osc.frequency.value = note.f;
+            // Detuned pair for warmth
+            const osc2 = ctx.createOscillator(); osc2.type = "sine"; osc2.frequency.value = note.f + note.d;
             const g = ctx.createGain(); g.gain.value = 0;
-            const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.03 + i * 0.01;
-            const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.015;
-            lfo.connect(lfoGain); lfoGain.connect(g.gain); osc.connect(g); g.connect(master);
-            osc.start(); lfo.start();
+            // Slow evolving volume
+            const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.02 + i * 0.008;
+            const lfoG = ctx.createGain(); lfoG.gain.value = 0.012;
+            lfo.connect(lfoG); lfoG.connect(g.gain);
+            osc.connect(g); osc2.connect(g);
+            g.connect(dryWet); g.connect(delay1);
+            osc.start(); osc2.start(); lfo.start();
+            // Gentle fade in, staggered
             g.gain.setValueAtTime(0, ctx.currentTime);
-            g.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 2 + i * 1.5);
-            nodesRef.current.push({ osc, lfo, g });
+            g.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 3 + i * 2);
+            nodesRef.current.push({ osc, osc2, lfo, g });
           });
+
+          // Sub bass — deep foundation
+          const sub = ctx.createOscillator(); sub.type = "sine"; sub.frequency.value = 65.4; // C2
+          const subG = ctx.createGain(); subG.gain.value = 0;
+          const subLfo = ctx.createOscillator(); subLfo.type = "sine"; subLfo.frequency.value = 0.015;
+          const subLfoG = ctx.createGain(); subLfoG.gain.value = 0.008;
+          subLfo.connect(subLfoG); subLfoG.connect(subG.gain);
+          sub.connect(subG); subG.connect(dryWet);
+          sub.start(); subLfo.start();
+          subG.gain.setValueAtTime(0, ctx.currentTime);
+          subG.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 5);
+          nodesRef.current.push({ osc: sub, osc2: subLfo, lfo: subLfo, g: subG });
+          nodesRef.current.push({ osc: noise, osc2: noiseLfo, lfo: noiseLfo, g: noiseGain });
+
         } catch(e) { console.error("Audio:", e); }
       }, []);
       const stop = useCallback(() => {
         activeRef.current = false;
-        nodesRef.current.forEach(n => { try { n.osc.stop(); n.lfo.stop(); } catch(e){} });
+        nodesRef.current.forEach(n => { try { n.osc.stop(); } catch(e){} try { n.osc2?.stop(); } catch(e){} try { n.lfo.stop(); } catch(e){} });
         nodesRef.current = [];
         if (ctxRef.current) { try { ctxRef.current.close(); } catch(e){} }
       }, []);
@@ -792,21 +846,64 @@ Keep responses warm but concise — 2-4 paragraphs max. This is a mobile app.`;
 
       const renderChat = () => {
         const showWelcome = chatMessages.length === 0;
+        const emotionColors = { crisis: "#c0392b", sadness: "#7B6D8D", depression: "#7B6D8D", anxiety: "#E07A5F", anger: "#c0392b", loneliness: "#6CA6C1", grief: "#8e7cc3", trauma: "#a0522d", selfworth: "#E07A5F", addiction: "#cc8e35", betrayal: "#c0392b", divorce: "#6CA6C1", stress: "#E07A5F", general: "#81B29A" };
+        const lastEmotion = chatMessages.length > 0 ? detectEmotion(chatMessages.filter(m=>m.role==="user").slice(-1)[0]?.content || "") : "general";
+        const accentColor = emotionColors[lastEmotion] || "#81B29A";
+
         return <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: "70vh" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}><button onClick={() => setScreen("home")} style={{ background: "none", border: "none", color: fgMuted, fontSize: 14, cursor: "pointer" }}>← Back</button><span style={{ fontSize: 13, color: fgMuted }}>MindPulse 🌿</span></div>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, padding: "8px 0", borderBottom: dark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.04)" }}>
+          <button onClick={() => setScreen("home")} style={{ background: "none", border: "none", color: fgMuted, fontSize: 14, cursor: "pointer" }}>← Back</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, #0D5C63, ${accentColor})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, animation: isTyping ? "pulse 2s infinite" : "none" }}>🌿</div>
+            <div><div style={{ fontSize: 13, fontWeight: 600, color: fg }}>MindPulse</div><div style={{ fontSize: 10, color: accentColor }}>{isTyping ? "reflecting..." : "here with you"}</div></div>
+          </div>
+        </div>
+
+        {/* Messages */}
         <div style={{ flex: 1, overflowY: "auto", marginBottom: 12 }}>
           {showWelcome && <div style={{ marginBottom: 10 }}>
-            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 10 }}>
-              <div style={{ maxWidth: "82%", padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: cardBg, color: fg, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{getWelcomeMessage()}</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 10 }}>
+              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg, #0D5C63, #81B29A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>🌿</div>
+              <div style={{ maxWidth: "80%", padding: "14px 18px", borderRadius: "4px 20px 20px 20px", background: dark ? "linear-gradient(135deg, rgba(13,92,99,0.25), rgba(129,178,154,0.15))" : "linear-gradient(135deg, rgba(13,92,99,0.08), rgba(129,178,154,0.06))", color: fg, fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap", border: dark ? "1px solid rgba(129,178,154,0.15)" : "1px solid rgba(13,92,99,0.08)" }}>{getWelcomeMessage()}</div>
             </div>
           </div>}
-          {chatMessages.map((m, i) => (<div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 10 }}><div style={{ maxWidth: "82%", padding: "12px 16px", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: m.role === "user" ? "#0D5C63" : cardBg, color: m.role === "user" ? "#fff" : fg, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{m.content}</div></div>))}
-          {isTyping && chatMessages[chatMessages.length-1]?.role !== "assistant" && <div style={{ display: "flex", marginBottom: 10 }}><div style={{ padding: "12px 20px", borderRadius: "18px 18px 18px 4px", background: cardBg, color: fgMuted, fontSize: 14 }}><span style={{ animation: "pulse 1.5s infinite" }}>✦ reflecting...</span></div></div>}
+
+          {chatMessages.map((m, i) => {
+            const isUser = m.role === "user";
+            return <div key={i} style={{ display: "flex", alignItems: isUser ? "flex-end" : "flex-end", justifyContent: isUser ? "flex-end" : "flex-start", gap: 8, marginBottom: 12 }}>
+              {!isUser && <div style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg, #0D5C63, ${accentColor})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>🌿</div>}
+              <div style={{
+                maxWidth: "78%", padding: "14px 18px",
+                borderRadius: isUser ? "20px 20px 4px 20px" : "4px 20px 20px 20px",
+                background: isUser
+                  ? "linear-gradient(135deg, #0D5C63, #0a4a50)"
+                  : dark ? `linear-gradient(135deg, rgba(13,92,99,0.2), rgba(${accentColor === "#81B29A" ? "129,178,154" : "224,122,95"},0.1))` : `linear-gradient(135deg, rgba(13,92,99,0.06), rgba(${accentColor === "#81B29A" ? "129,178,154" : "224,122,95"},0.04))`,
+                color: isUser ? "#fff" : fg,
+                fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-wrap",
+                border: isUser ? "none" : dark ? "1px solid rgba(129,178,154,0.12)" : "1px solid rgba(13,92,99,0.06)",
+                boxShadow: isUser ? "0 2px 8px rgba(13,92,99,0.2)" : "none",
+              }}>{m.content}</div>
+            </div>;
+          })}
+
+          {isTyping && chatMessages[chatMessages.length-1]?.role !== "assistant" && <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 12 }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: `linear-gradient(135deg, #0D5C63, ${accentColor})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, animation: "pulse 1.5s infinite" }}>🌿</div>
+            <div style={{ padding: "14px 20px", borderRadius: "4px 20px 20px 20px", background: dark ? "rgba(13,92,99,0.15)" : "rgba(13,92,99,0.05)", color: fgMuted, fontSize: 14, border: dark ? "1px solid rgba(129,178,154,0.1)" : "1px solid rgba(13,92,99,0.05)" }}>
+              <span style={{ display: "inline-flex", gap: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, animation: "pulse 1.2s infinite", animationDelay: "0s", opacity: 0.7 }}></span>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, animation: "pulse 1.2s infinite", animationDelay: "0.3s", opacity: 0.7 }}></span>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, animation: "pulse 1.2s infinite", animationDelay: "0.6s", opacity: 0.7 }}></span>
+              </span>
+            </div>
+          </div>}
           <div ref={chatEndRef} />
         </div>
-        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 0, paddingBottom: 4, background: "inherit" }}>
-          <input value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }} placeholder="Share what's on your mind..." autoComplete="off" enterKeyHint="send" style={{ flex: 1, padding: 14, borderRadius: 20, border: dark ? "1px solid rgba(255,255,255,0.15)" : "1px solid #ddd", background: inputBg, fontSize: 16, color: fg, WebkitAppearance: "none" }} />
-          <button onClick={sendChatMessage} disabled={isTyping} style={{ padding: "14px 18px", borderRadius: 20, border: "none", background: isTyping ? "#666" : "#0D5C63", color: "#fff", fontSize: 16, cursor: isTyping ? "default" : "pointer", flexShrink: 0 }}>↑</button>
+
+        {/* Input */}
+        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 0, paddingBottom: 4, paddingTop: 8, background: "inherit" }}>
+          <input value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }} placeholder="Share what's on your mind..." autoComplete="off" enterKeyHint="send" style={{ flex: 1, padding: "14px 18px", borderRadius: 24, border: dark ? "1px solid rgba(255,255,255,0.12)" : `1px solid rgba(13,92,99,0.15)`, background: dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.8)", fontSize: 16, color: fg, WebkitAppearance: "none", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }} />
+          <button onClick={sendChatMessage} disabled={isTyping} style={{ padding: "14px 18px", borderRadius: 24, border: "none", background: isTyping ? "#999" : `linear-gradient(135deg, #0D5C63, ${accentColor})`, color: "#fff", fontSize: 16, cursor: isTyping ? "default" : "pointer", flexShrink: 0, boxShadow: isTyping ? "none" : "0 2px 8px rgba(13,92,99,0.25)", transition: "all 0.3s" }}>↑</button>
         </div>
       </div>;
       };
