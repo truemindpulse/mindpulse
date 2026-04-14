@@ -3,7 +3,7 @@
 **Free AI-Powered Mental Wellness Companion**
 *Heal Yourself. Heal the World.*
 
----
+-----
 
 ## What is MindPulse?
 
@@ -15,25 +15,27 @@ As you heal, the world heals with you: every check-in, journal entry, and milest
 
 ## Features
 
-- **🗣️ AI Therapy Chat** — CBT/DBT-informed conversations adapted to your personality, trauma type, and astrological profile
-- **🌙 Astro-Insight Engine** — Full zodiac profile integration for personalized communication style
-- **📊 Mood Dashboard** — Track emotions over time, spot patterns, get predictive alerts
-- **📓 Encrypted Journal** — Private entries stored locally, only you can read them
-- **🌬 Breathing Exercises** — 4-7-8 technique with animated breathing circle
-- **🎶 Ambient Soundscape** — Procedural lo-fi tones via Web Audio API
-- **🌳 Pulse Points** — Earn points through daily engagement, drive real-world environmental impact
-- **🚨 Crisis Safety Net** — 988 Lifeline and Crisis Text Line always visible
+- **🗣️ AI Therapy Chat** — CBT/DBT-informed conversations adapted to your personality, trauma type, and astrological profile. The AI evolves with every interaction — your mood patterns, journal themes, intentions, and zodiac traits all feed into its memory.
+- **🌙 Astro-Insight Engine** — Full zodiac profile integration that shapes how MindPulse communicates with you (metaphors, energy matching, spiritual depth).
+- **📊 Immersive Mood Check-In** — 8-mood spectrum with morphing visual orb, gradient feedback, and optional notes to capture the “why” behind the feeling.
+- **📓 Guided Journal** — AI-generated writing prompts, mood tags, character counts, and a growing archive of past entries.
+- **🌬️ Breathwork Suite** — 4 distinct exercises: 4-7-8 Calm, Box Breathing, Energizing Breath, Sleep Descent. Each with animated breathing orb and phase-specific colors.
+- **🧘 Grounding Toolkit** — 3 interactive techniques: 5-4-3-2-1 Senses (type in responses), Body Scan (guided 9-region progression), Mirror Work (affirmation cards).
+- **🌳 Pulse Points** — Earn points through daily engagement, driving real-world environmental impact.
+- **🎶 Ambient Soundscape** — Procedural binaural tones via Web Audio API.
+- **✨ Dimensional UI** — Dark ethereal design with floating particles, morphing orbs, glass cards, and time-of-day adaptive gradients.
+- **🚨 Crisis Safety Net** — 988 Lifeline and Crisis Text Line always accessible.
 
 ## Tech Stack — $0 Architecture
 
-| Layer | Technology | Cost |
-|-------|-----------|------|
-| AI Engine | [Pollinations.ai](https://pollinations.ai) | Free |
-| Storage | localStorage (client-side) | Free |
-| Hosting | [Cloudflare Pages](https://pages.cloudflare.com) | Free |
-| Frontend | React + Vite (single file) | Free |
-| Music | Web Audio API (procedural) | Free |
-| Impact APIs | Digital Humani, GoodAPI, 1ClickImpact | Pay-per-impact |
+|Layer      |Technology                                      |Cost          |
+|-----------|------------------------------------------------|--------------|
+|AI Engine  |[Pollinations.ai](https://pollinations.ai)      |Free          |
+|Storage    |localStorage (client-side)                      |Free          |
+|Hosting    |[Cloudflare Pages](https://pages.cloudflare.com)|Free          |
+|Frontend   |React + Vite (single file)                      |Free          |
+|Music      |Web Audio API (procedural)                      |Free          |
+|Impact APIs|Digital Humani, GoodAPI, 1ClickImpact           |Pay-per-impact|
 
 ## Quick Start
 
@@ -49,23 +51,25 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) on your phone or browser.
+Open <http://localhost:3000> on your phone or browser.
 
 ## Deploy to Cloudflare Pages
 
 ### Option 1: GitHub Integration (Recommended)
+
 1. Push this repo to GitHub
-2. Go to [Cloudflare Pages](https://pages.cloudflare.com)
-3. Click **Create a project** → **Connect to Git**
-4. Select your repo
-5. Build settings:
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-6. Click **Save and Deploy**
+1. Go to [Cloudflare Pages](https://pages.cloudflare.com)
+1. Click **Create a project** → **Connect to Git**
+1. Select your repo
+1. Build settings:
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+1. Click **Save and Deploy**
 
 Your app will be live at `https://mindpulse.pages.dev` (or custom domain).
 
 ### Option 2: Direct Upload
+
 ```bash
 npm run build
 npx wrangler pages deploy dist --project-name=mindpulse
@@ -74,7 +78,7 @@ npx wrangler pages deploy dist --project-name=mindpulse
 ## Privacy & Security
 
 - **No ads. No data selling. No tracking pixels. No third-party analytics.**
-- All data stored in localStorage (never leaves the user's device)
+- All data stored in localStorage (never leaves the user’s device)
 - No server-side storage of personal information
 - Open source for full transparency
 - Anonymous — no account required
@@ -92,14 +96,15 @@ MindPulse connects to real environmental organizations:
 
 ```
 mindpulse/
-├── index.html          # Entry HTML with PWA meta tags
-├── package.json        # Dependencies & scripts
-├── vite.config.js      # Vite configuration
+├── index.html            # Entry HTML with PWA meta tags
+├── package.json          # Dependencies & scripts
+├── vite.config.js        # Vite configuration
+├── .gitignore            # Git ignore rules
 ├── public/
-│   └── manifest.json   # PWA manifest
+│   └── manifest.json     # PWA manifest
 └── src/
-    ├── main.jsx        # React entry point
-    └── MindPulse.jsx   # Full application (single file)
+    ├── main.jsx          # React entry point
+    └── MindPulse.jsx     # Full application (single file)
 ```
 
 ## License
@@ -108,9 +113,9 @@ MIT — Free to use, modify, and distribute.
 
 ## Contributing
 
-This is an open-source project. PRs welcome. If you're a therapist, designer, or developer who cares about mental health accessibility, we'd love your input.
+This is an open-source project. PRs welcome. If you’re a therapist, designer, or developer who cares about mental health accessibility, we’d love your input.
 
----
+-----
 
 **Built by Anirudh Ravikumar (Roodboy) • 2026**
 
